@@ -20,6 +20,26 @@ function cut_frequencies(ps::Array{Float64}, freqs::StepRangeLen, lowFreq::Int, 
 end
 
 """
+"""
+function power_spectrum(sig::Array{Float64}, sampFreq::Int=500)
+    n = size(sig)[1]
+    p = fft(sig,1)
+    n_unique = ceil(Int, (n+1)/2)
+    p = p[1:n_unique,:]
+    p = abs.(p)
+    p = p ./ n #scale
+    p = p.^2  # square it
+    # odd nfft excludes Nyquist point
+    if n % 2 > 0
+        p[2:length(p)] = p[2:length(p)]*2 # we've got odd number of   points fft
+    else 
+        p[2:(length(p)-1)] = p[2: (length(p) -1)]*2 # we've got even number of points fft
+    end
+    freqArray = (0:(n_unique-1)) * (sampFreq / n)
+    return p, freqArray
+end
+
+"""
 `pot_abs(sig::Array{Float64,2}, sampFreq::Int=500)::Array{Float64}`
 Return the absolute spectral potence of 7 different frequency bands:
 delta  = [1,4)
@@ -39,20 +59,7 @@ Output:
 """
 function pot_abs(sig::Array{Float64}, sampFreq::Int=500)::Array{Float64}
 
-    n = size(sig)[1]
-    p = fft(sig,1)
-    n_unique = ceil(Int, (n+1)/2)
-    p = p[1:n_unique,:]
-    p = abs.(p)
-    p = p ./ n #scale
-    p = p.^2  # square it
-    # odd nfft excludes Nyquist point
-    if n % 2 > 0
-        p[2:length(p)] = p[2:length(p)]*2 # we've got odd number of   points fft
-    else 
-        p[2:(length(p)-1)] = p[2: (length(p) -1)]*2 # we've got even number of points fft
-    end
-    freqArray = (0:(n_unique-1)) * (sampFreq / n)
+    p, freqArray = power_spectrum(sig, sampFreq)
 
     delta  = sum(cut_frequencies(p,freqArray,1,4),1)
     theta  = sum(cut_frequencies(p,freqArray,4,8),1)
@@ -94,4 +101,14 @@ function pot_rel(absl::Array{Float64})::Array{Float64}
     return [delta; theta; alpha1; alpha2; beta1; beta2; gamma]
 end
 
+"""
 
+"""
+function plot_pot(ps::Array{Float64},freqs::StepRangeLen,n_channels::Int,low::Int=0,high::Int=30,args...)
+    freqz = repmat(freqs,1,size(ps,2))
+    plot(freqz,ps,
+    layout=(n_channels,1),
+    label=header,
+    xlims=(low,high),
+    args...)
+end
