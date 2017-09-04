@@ -22,53 +22,90 @@ function parse_commandline()
                          commands_are_required = false)
 
     @add_arg_table s begin
-        "--channels", "-c"
+        "--setup", "-s"
             help = "Indicate file with channel setup"
+            arg_type = String
         "--bands", "-b"
             help = "Indicate file with band setup"
+            arg_type = String
         "--template", "-t"
             help = "Indicate template to use"
+            arg_type = String
+            default = joinpath(pwd(),"templates/main.jmd")
+        "--html"
+            help = "Indicate a html template to use"
+            arg_type = String
+            default = joinpath(pwd(),"templates/main_html.tpl")
+        "--css"
+            help = "Indicate a css template to use"
+            arg_type = String
+            default = joinpath(pwd(),"css/style.css")
         "--gui", "-g"
             help = "Start gtk window"
             action = :store_true
         "input"
             help = "Input file or folder to analyze"
-        "output"
+            arg_type = String
+            default = joinpath(pwd(),"example/eeg.txt")
+        "--output", "-o"
             help = "Folder or file name to save the report"
-
-        # "arg1"
-        #     help = "a positional argument"
-        #     required = true
-        #     action = :store_true
-        #     arg_type = Int
-        #     default = 0
+            default = "Reports/last.html"
     end
 
     return parse_args(s)
 end
 
 function main()
-    parsed_args = parse_commandline()
-    println("Parsed args:")
-    for (arg,val) in parsed_args
-        println("  $arg  =>  $val")
+    args = parse_commandline()
+
+    if args["setup"] != nothing
+        setup = read_chsetup(args["setup"])
+    else
+        setup = read_chsetup()
     end
 
-    # setup = read_chsetup()
-    # band_names = ["delta","theta","alpha1","alpha2","beta1","beta2","gamma"]
-    # n_channels = size(setup,1)
+    if args["bands"] != nothing
+        # TODO: Implement reading bands
+        error("Not yet implemented: band setup")
+    else
+        band_names = band_names = ["delta","theta","alpha1","alpha2","beta1","beta2","gamma"]
+    end
 
-    # sig, channels = read_sig(joinpath(pwd(),"example/eeg.txt"), n_channels)
-    # absl = pot_abs(sig)
-    # info(typeof(absl))
-    # rel = pot_rel(absl)
-    # println(sum(absl,2))
-    # println(sum(rel,2))
-    # cor_mat  = cor(sig)
-    # coh_mats = coh(sig,n_channels)
+    n_channels = size(setup,1)
+    template = args["template"]
+    files = []
+
+    if isdir(args["input"])
+        files = readdir(args["input"])
+        MULTIPLE = true
+    elseif isfile(args["input"])
+        files = [args["input"]]
+    else
+        error("Input is neither a file nor a directory")
+    end
+
+    for file in files
+        print(file)
+        # sig, channels = read_sig(file, n_channels)
+
+        # weave("../templates/example.jmd", 
+        # out_path = "../Reports",
+        # plotlib = "Plots",
+        # template = "../templates/julia_html.tpl",
+        # args = Dict( "date" => Dates.format(now(), "dd/mm/yyyy HH:MM") ),
+        # doctype = "md2html")
+
+        # sig, channels = read_sig(joinpath(pwd(),"example/eeg.txt"), n_channels)
+        # absl = pot_abs(sig)
+        # info(typeof(absl))
+        # rel = pot_rel(absl)
+        # println(sum(absl,2))
+        # println(sum(rel,2))
+        # cor_mat  = cor(sig)
+        # coh_mats = coh(sig,n_channels)
+    end
+
+
 end
 
 main()
-
-
-

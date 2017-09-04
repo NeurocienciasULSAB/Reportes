@@ -129,3 +129,5 @@ tags
 .ipynb_checkpoints
 ### Mac
 .DS_Store
+
+Reports/*
