@@ -22,7 +22,8 @@ def read_sig(path, n_channels, header=None, sep='\t', rem_len=5):
         header = [i for i in sig.columns]
     if rem_len:
         header = [i[0:-rem_len] for i in header]
-    return sig, header
+    sig.columns = header
+    return sig
 
 
 def read_chsetup(path=None, sep='\t'):
@@ -55,31 +56,43 @@ def read_chsetup(path=None, sep='\t'):
 
 
 def create_bands(band_names, band_lows, band_highs):
-    return pd.DataFrame({"band_names": band_names,
-                         "band_lows" : band_lows,
-                         "band_highs": band_highs})
+    df = pd.DataFrame({"name": band_names,
+                       "low" : band_lows,
+                       "high": band_highs})
+    return df[["name","low","high"]]
 
 
-def pot_abs(df, bands, fs=500, window='hanning', nperseg=256):
+def pot_abs(df, bands, fs=500, window='hanning', nperseg=1):
     """
     Return a dataframe with the abolute power of the given bands for every channel in the dataframe
 
     :param df: data frame with signals as rows and channels as columns
     :param fs: sampling frequency
     :param window: Desired window to use. See [get_window](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.get_window.html#scipy.signal.get_window) for a list of windows and required parameters.
-    :param nperseg: Length of each segment. Defaults to 256.
+    :param nperseg: Segments per second. Defaults to 1.
     :param bands: Dataframe with the desired bands and their cut frequencies
 
     Window types:
     boxcar, triang, blackman, hamming, hann, bartlett, flattop, parzen, bohman, blackmanharris, nuttall, barthann, kaiser (needs beta), gaussian (needs std), general_gaussian (needs power, width), slepian (needs width), chebwin (needs attenuation)
     """
-    n_bands = bands.size
-    abs_df  = pd.DataFrame(columns=list(df.columns.values))
-    for band in bands:
-            print(band)
-    for channel in df:
-        f, ps = signal.welch(df[channel], fs, window=window, nperseg=nperseg)
-       
+    if nperseg > fs:
+        raise AssertionError("Sampling frequency cannot be bigger than window size")
 
-def pot_rel(absl):
-    raise NotImplementedError
+    abs_df  = pd.DataFrame(columns=list(df.columns.values))
+    for channel in df:
+        f, ps = signal.welch(df[channel], fs, window=window, nperseg=nperseg*fs)
+        sdf = pd.DataFrame(ps,index=f)
+        v = []
+        for index, row in bands.iterrows():
+            pot = float(sdf[row["low"]:row["high"]].sum())
+            v.append(pot)
+        abs_df[channel] = v
+    abs_df.index = bands["name"]
+    return abs_df
+
+
+def pot_rel(abs_df):
+    rel_df = abs_df.copy()
+    for col in abs_df:
+        rel_df[col] = abs_df[col] / sum(abs_df[col])
+    return rel_df

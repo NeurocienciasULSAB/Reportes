@@ -72,7 +72,7 @@ def main():
     if os.path.isdir(args.input):
         raise NotImplementedError
         files = readdir(args.input)  # TODO: readdir
-        MULTIPLE = true
+        MULTIPLE = True
     elif os.path.isfile(args.input):
         files = [args.input]
     else:
@@ -80,14 +80,16 @@ def main():
 
     for f in files:
         print("INFO: Processing file ", f)
-        sig, channels = rp.read_sig(f, n_channels) 
-        absp = rp.pot_abs(sig,bands)
-        rel  = rp.pot_rel(absl)
+        sig  = rp.read_sig(f, n_channels)
+        abs_df = rp.pot_abs(sig, bands)
+        rel_df  = rp.pot_rel(abs_df)
 
+        print(rel_df)
+        print(abs_df)
         raise NotImplementedError
         pweave.weave(template,
                      doctype="md2html",
-        ) #TODO
+                     )  # TODO
 
 
 if __name__ == "__main__":
