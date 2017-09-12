@@ -1,5 +1,5 @@
 ---
-title : Reporte EEG
+title : Example report 
 ---
 
 # `j println(WEAVE_ARGS["date"])`
@@ -44,11 +44,19 @@ use the `out_path = :pwd`.
 The basic code chunk will be run with default options and the code and
 output will be captured.
 
-```julia
-using Gadfly
+```{julia}
+using Plots
 x = linspace(0, 2*pi)
 println(x)
 plot(x = x, y = sin.(x))
+```
+
+```{julia;echo=false}
+plot(sin.(x))
+```
+
+```{julia;echo=false}
+heatmap(randn(10,10))
 ```
 
 You can also control the way the results are captured, plot size etc.
@@ -63,9 +71,13 @@ y = [2, 4 ,8]
 You can also for instance hide the code and show only the figure, add a
 caption to the figure and make it wider as follows (you can only see the
 syntax from the source document):
+```{julia;echo=false}
+var = cumsum(randn(1000, 1))
+
+```
 
 ```{julia;echo=false; fig_cap="A random walk."; label="random"; fig_width=7; fig_height=4}
-plot(y = cumsum(randn(1000, 1)), Geom.line)
+plot(y=var)
 ```
 
 # Whats next
@@ -76,3 +88,33 @@ Read the documentation:
   - latest: [http://mpastell.github.io/Weave.jl/latest/](http://mpastell.github.io/Weave.jl/latest/)
 
 See other examples in the [Github repo](https://github.com/mpastell/Weave.jl/tree/master/examples)
+
+
+
+```julia
+pyplot()
+# load a dataset
+using RDatasets
+iris = dataset("datasets", "iris");
+
+# load the StatPlots recipes (for DataFrames) available via:
+# Pkg.add("StatPlots")
+using StatPlots
+
+# Scatter plot with some custom settings
+s = scatter(iris, :SepalLength, :SepalWidth, group=:Species,
+        title = "My awesome plot",
+        xlabel = "Length", ylabel = "Width",
+        m=(0.5, [:cross :hex :star7], 12),
+        bg=RGB(.2,.2,.2))
+
+display(s)
+```
+
+```{julia;echo=false}
+s = scatter(iris, :SepalLength, :SepalWidth, group=:Species,
+        title = "My awesome plot",
+        xlabel = "Length", ylabel = "Width",
+        m=(0.5, [:cross :hex :star7], 12),
+        bg=RGB(.2,.2,.2))
+```

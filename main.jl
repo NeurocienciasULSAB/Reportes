@@ -14,6 +14,7 @@ end
 
 using Reporte
 using ArgParse
+using Weave
 
 function parse_commandline()
     s = ArgParseSettings(prog = "Reportes",
@@ -49,7 +50,7 @@ function parse_commandline()
             default = joinpath(pwd(),"example/eeg.txt")
         "--output", "-o"
             help = "Folder or file name to save the report"
-            default = "Reports/last.html"
+            default = joinpath(pwd(),"Reports/last.html")
     end
 
     return parse_args(s)
@@ -72,7 +73,7 @@ function main()
     end
 
     n_channels = size(setup,1)
-    template = args["template"]
+    template = args["template"] # TODO: verify template
     files = []
 
     if isdir(args["input"])
@@ -85,15 +86,24 @@ function main()
     end
 
     for file in files
-        print(file)
-        # sig, channels = read_sig(file, n_channels)
+        info("Processing ",file)
+        sig, channels = read_sig(file, n_channels)
+        absl = pot_abs(sig)
+        rel  = pot_rel(absl)
 
-        # weave("../templates/example.jmd", 
-        # out_path = "../Reports",
-        # plotlib = "Plots",
-        # template = "../templates/julia_html.tpl",
-        # args = Dict( "date" => Dates.format(now(), "dd/mm/yyyy HH:MM") ),
-        # doctype = "md2html")
+        weave(template, 
+        out_path = args["output"], # TODO: saving name should change to avoid override Date(now())
+        template = args["html"],
+              args = Dict( "date" => Dates.format(now(), "dd/mm/yyyy HH:MM"),
+                           "subject" => basename(file), 
+                           "chls" => channels,
+                           "bnds" => band_names,
+                           "abs"  => absl,
+                           "rel"  => rel,
+                           "cor"  => cor(sig),
+                           "coh"  => coh(sig,n_channels)
+                           ),
+        doctype = "md2html")
 
         # sig, channels = read_sig(joinpath(pwd(),"example/eeg.txt"), n_channels)
         # absl = pot_abs(sig)
