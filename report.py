@@ -86,6 +86,43 @@ def psd(sig, fs=500, window='hanning', nperseg=1):
     return psd_df
 
 
+def sig_to_frequency(sig, fs=500):
+    """
+    Return the power spectrum and phase of a given signal as data frames
+    :param sig: Dataframe containing one signal per column
+    :param fs: Sampling frequency
+    """
+    freq_df = sig.copy().apply(simple_fft,
+                               axis=0,
+                               args=(fs,
+                                     False)
+                               )
+    freq_df.index = simple_fft(freq_df[[0]], fs=fs,f=True)
+    phase_df = freq_df.copy().apply(np.angle, axis=0)
+    psd_df = freq_df.apply(lambda x: (np.abs(x) / sig.size)**2,
+                           axis=0)
+    return psd_df, phase_df
+
+
+def simple_fft(sig, fs=500, f=False):
+    """
+    receive single signal and return either fourier transform, or frequencies
+    :param sig: real signal to be converted
+    :param fs: sampling frequency in hertz, defaults to 500
+    :param f: frequency flag. If True, returns only the frequencies array
+    """
+    # s = sig.tolist()
+    N = sig.size
+    time_step = 1/fs
+    freqs = np.fft.fftfreq(N,time_step)
+    idx = np.argsort(freqs)
+    if f:
+        return freqs[idx]
+    else:
+        ps = np.fft.fft(sig)
+        return ps[idx]
+
+
 def pot_abs(psd_df, bands):
     """
     Return a dataframe with the abolute power of the given bands for every channel in the dataframe
@@ -101,10 +138,15 @@ def pot_abs(psd_df, bands):
             pot = float(psd_df[row["low"]:row["high"]][channel].sum())
             v.append(pot)
         abs_df[channel] = v
+        abs_df.index = bands["name"]
     return abs_df
 
 
 def pot_rel(abs_df):
+    """
+    Return relative power per band, based on absolute power.
+    :param abs_df: Dataframe with absolute power where rows are bands and columns are channels
+    """
     rel_df = abs_df.copy()
     for col in abs_df:
         rel_df[col] = abs_df[col] / sum(abs_df[col])
@@ -113,7 +155,45 @@ def pot_rel(abs_df):
 
 def coh(sig, bands, fs=500):
     """
-    Return the co
+    Return the coherence between signals of a dataframe averaged over a frequency band.
+    :param sig: dataframe with a signal for every column
+    :param bands: dataframe with a column for name, lower inclusive frequency and higher non-inclusive frequency.
+    :param fs: sampling frequency
     """
-    # signal.coherence(sig1,sig2,fs=fs)
-    raise NotImplementedError
+    cols=[i + "-" + j for i in sig for j in sig]
+    coh_df = pd.DataFrame(columns=cols)
+    coh_temp = pd.DataFrame()
+    for col1 in sig:
+        for col2 in sig:
+            freq, coh = signal.coherence(sig[col1],
+                                         sig[col2],
+                                         fs)
+            coh_temp["temp"] = coh
+            coh_temp.index = freq
+            v = []
+            for index, row in bands.iterrows():
+                band_coh = float(coh_temp[row["low"]:row["high"]].mean())  # TODO: check if average is correct
+                v.append(band_coh)
+
+            coh_df[col1+"-"+col2] = v
+
+    coh_df.index = bands["name"]
+    return coh_df
+
+
+def phase_dif(phase_df, bands):
+    """
+    """
+    cols = [i + "-" + j for i in phase_df for j in phase_df]
+    pdif_df = pd.DataFrame(columns=cols)
+    ph_temp = pd.DataFrame()
+    for col1 in phase_df:
+        for col2 in phase_df:
+            ph_temp = phase_df[col1]-phase_df[col2]
+            ph_temp.index = phase_df.index
+            v = []
+            for index, row in bands.iterrows():
+                v.append(float(ph_temp[row["low"]:row["high"]].mean()))
+            pdif_df[col1+"-"+col2] = v
+    pdif_df.index = bands["name"]
+    return pdif_df

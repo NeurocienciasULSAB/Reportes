@@ -45,6 +45,8 @@ def main():
     parser   = create_parser(dir_path)
     args     = parser.parse_args()
 
+    fs = 500  # TODO: input frequency
+
     if args.setup:
         setup = rp.read_chsetup(args.setup)
     else:
@@ -80,15 +82,21 @@ def main():
     for f in files:
         print("INFO: Processing file ", f)
         sig    = rp.read_sig(f, n_channels)
-        psd_df = rp.psd(sig)
-        abs_df = rp.pot_abs(psd_df, bands)
-        rel_df = rp.pot_rel(abs_df)
-        cor_df = sig.corr()
+        # psd_df = rp.psd(sig, fs=fs) # Not used
+        psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
+        # abs_df = rp.pot_abs(psd_df, bands)
+        # rel_df = rp.pot_rel(abs_df)
+        # cor_df = sig.corr()
+        # coh_df = rp.coh(sig, bands, fs=fs)
+        pdif_df = rp.phase_dif(phase_df, bands)
 
         # print(psd_df.head())
+        # print(phase_df.head())
         # print(rel_df.head())
         # print(abs_df.head())
-        print(cor_df.head())
+        # print(coh_df.head())
+        print(pdif_df.head())
+        
         raise NotImplementedError
         pweave.weave(template,
                      doctype="md2html",
