@@ -62,32 +62,45 @@ def create_bands(band_names, band_lows, band_highs):
     return df[["name","low","high"]]
 
 
-def pot_abs(df, bands, fs=500, window='hanning', nperseg=1):
+def psd(sig, fs=500, window='hanning', nperseg=1):
     """
-    Return a dataframe with the abolute power of the given bands for every channel in the dataframe
-
-    :param df: data frame with signals as rows and channels as columns
     :param fs: sampling frequency
     :param window: Desired window to use. See [get_window](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.get_window.html#scipy.signal.get_window) for a list of windows and required parameters.
     :param nperseg: Segments per second. Defaults to 1.
-    :param bands: Dataframe with the desired bands and their cut frequencies
 
     Window types:
     boxcar, triang, blackman, hamming, hann, bartlett, flattop, parzen, bohman, blackmanharris, nuttall, barthann, kaiser (needs beta), gaussian (needs std), general_gaussian (needs power, width), slepian (needs width), chebwin (needs attenuation)
     """
     if nperseg > fs:
         raise AssertionError("Sampling frequency cannot be bigger than window size")
+    psds= sig.copy().apply(signal.welch,
+                           axis=0,
+                           args=(fs,
+                                 window,
+                                 nperseg * fs)
+                           )
+    psd_df = pd.DataFrame(columns=list(sig.columns.values),
+                          index=psds[0][0])
+    for column, i in zip(psd_df, psds):
+        psd_df[column] = i[1]
+    return psd_df
 
-    abs_df  = pd.DataFrame(columns=list(df.columns.values))
-    for channel in df:
-        f, ps = signal.welch(df[channel], fs, window=window, nperseg=nperseg*fs)
-        sdf = pd.DataFrame(ps,index=f)
+
+def pot_abs(psd_df, bands):
+    """
+    Return a dataframe with the abolute power of the given bands for every channel in the dataframe
+
+    :param df: data frame with power spectrum as rows and channels as columns
+    :param bands: Dataframe with the desired bands and their cut frequencies
+    """
+    abs_df  = pd.DataFrame(columns=list(psd_df.columns.values),
+                           index=bands["name"])
+    for channel in psd_df:
         v = []
         for index, row in bands.iterrows():
-            pot = float(sdf[row["low"]:row["high"]].sum())
+            pot = float(psd_df[row["low"]:row["high"]][channel].sum())
             v.append(pot)
         abs_df[channel] = v
-    abs_df.index = bands["name"]
     return abs_df
 
 
@@ -96,3 +109,11 @@ def pot_rel(abs_df):
     for col in abs_df:
         rel_df[col] = abs_df[col] / sum(abs_df[col])
     return rel_df
+
+
+def coh(sig, bands, fs=500):
+    """
+    Return the co
+    """
+    # signal.coherence(sig1,sig2,fs=fs)
+    raise NotImplementedError

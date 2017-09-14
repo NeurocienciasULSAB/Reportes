@@ -1,7 +1,6 @@
 
 import argparse
 import report as rp
-import pandas as pd
 import pweave
 import os
 
@@ -80,12 +79,16 @@ def main():
 
     for f in files:
         print("INFO: Processing file ", f)
-        sig  = rp.read_sig(f, n_channels)
-        abs_df = rp.pot_abs(sig, bands)
-        rel_df  = rp.pot_rel(abs_df)
+        sig    = rp.read_sig(f, n_channels)
+        psd_df = rp.psd(sig)
+        abs_df = rp.pot_abs(psd_df, bands)
+        rel_df = rp.pot_rel(abs_df)
+        cor_df = sig.corr()
 
-        print(rel_df)
-        print(abs_df)
+        # print(psd_df.head())
+        # print(rel_df.head())
+        # print(abs_df.head())
+        print(cor_df.head())
         raise NotImplementedError
         pweave.weave(template,
                      doctype="md2html",
