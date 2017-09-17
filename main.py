@@ -1,9 +1,9 @@
-
 import argparse
 import report as rp
+import pandas as pd
 import pweave
 import os
-from time import gmtime, strftime
+import shutil
 
 def create_parser(dir_path=os.path.dirname(os.path.realpath(__file__))):
     parser = argparse.ArgumentParser(prog="Reportes",
@@ -46,12 +46,15 @@ def main():
     parser   = create_parser(dir_path)
     args     = parser.parse_args()
 
-    fs = 500  # TODO: input frequency
+    fs = 500  # TODO: input frequency Variable to dump
+    cache_dir = os.path.join(dir_path, "cache")
 
     if args.setup:
         setup = rp.read_chsetup(args.setup)
     else:
-        setup = rp.read_chsetup()
+        setup = rp.read_chsetup() # TODO variable to dump
+    setup = pd.DataFrame(setup)
+    setup.columns = ["x","y","name"]
 
     if args.bands:
         # TODO: implement
@@ -66,9 +69,7 @@ def main():
                       "gamma"]
         band_lows  = [1, 4, 8, 11, 14, 20, 31]
         band_highs = [4, 8, 11, 14, 20, 31, 50]
-        bands = rp.create_bands(band_names, band_lows, band_highs)
-
-    n_channels = setup.shape[0]
+        bands = rp.create_bands(band_names, band_lows, band_highs)  # TODO variable to dump
     template = args.template
     files = []
     if os.path.isdir(args.input):
@@ -80,31 +81,38 @@ def main():
     else:
         raise IOError("ERROR: file or folder not found")
 
+    if os.path.exists(cache_dir):
+        shutil.rmtree(cache_dir)
+
+
+    os.makedirs(cache_dir)
+    bands.to_csv(os.path.join(cache_dir, "bands"),index=False)
+    setup.to_csv(os.path.join(cache_dir, "setup"),index=False)
+    pd.DataFrame({"freq":[fs],
+                  "output":[args.output]}).to_csv(os.path.join(cache_dir, "other"),index=False)
+    n_channels = setup.size # TODO: not true.
+
+
     for f in files:
         print("INFO: Processing file ", f)
-        # sig    = rp.read_sig(f, n_channels)
+        shutil.copyfile(f, os.path.join(cache_dir,"temp"))
+        pd.DataFrame({"name":[f]}).to_csv(os.path.join(cache_dir, "name"),index=False)
+        # sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
         # psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
         # abs_df = rp.pot_abs(psd_df, bands)
         # rel_df = rp.pot_rel(abs_df)
         # cor_df = sig.corr()
         # coh_df = rp.coh(sig, bands, fs=fs)
         # pdif_df = rp.phase_dif(phase_df, bands)
-
-
-        # Pweb.globals = { "foo" : "bar" } # This creates a global var `foo` with value 'bar'
-        # w = Pweb("inputfile.tex")        # Generate a Pweb class. We can't just call `pweave()`
-        # w.weave()                        # Equivalent of `pweave()`
-        pweave.Pweb.globals = {"date":strftime("%Y-%m-%d %H:%M:%S", gmtime()),
-                               "author":"Alberto Barradas"
-                               }
-        In = [0,0]
         w = pweave.Pweb(template,
                         doctype="md2html",
-                        output=args.output
-                        )
-        w.weave() 
+                        output="./Reports/"+os.path.basename(f).split('.')[0]+".html") # TODO: output folder and path.join
+        w.weave()
+
+    # shutil.rmtree(cache_dir)
 
 
 if __name__ == "__main__":
     # execute only if run as a script
     main()
+    

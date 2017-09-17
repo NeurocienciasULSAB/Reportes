@@ -1,161 +1,126 @@
 % Reporte de EEG
-% Alberto Barradas
-% A Date
 
-# Introduction
+# Setup
 
-`#print(author)`
+```python, echo=False
+# Read variables:
+import pandas as pd
+import os
+import report as rp
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
 
-`#= print(author)`
+global _dh
+dir_path = _dh[0]
 
-`#+ print(author)`
+bands     = pd.read_csv(os.path.join(dir_path, "cache", "bands"))
+setup     = pd.read_csv(os.path.join(dir_path, "cache", "setup"))
+name      = pd.read_csv(os.path.join(dir_path, "cache", "name"))
+other     = pd.read_csv(os.path.join(dir_path, "cache", "other"))
+file_name = name["name"][0]
+output    = other["output"][0]
+fs        = other["freq"][0]
 
-`print(author)`
+print(setup.size)
+print(setup)
 
-`#' print(author)`
+n_channels = setup.size - 1
+```
+
+Analysis for file <% print(file_name) %>
+# Analysis
 
 ```python
-print(author)
+
+sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
+psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
+abs_df = rp.pot_abs(psd_df, bands)
+rel_df = rp.pot_rel(abs_df)
+cor_df = sig.corr()
+coh_df = rp.coh(sig, bands, fs=fs)
+pdif_df = rp.phase_dif(phase_df, bands)
+
+
+print(sig.head())
+print(psd_df.head())
+print(phase_df.head())
+print(abs_df.head())
+print(rel_df.head())
+print(cor_df.head())
+print(coh_df.head())
+print(pdif_df.head())
 ```
 
+# Visualization
 
+## Signal
 ```python
-globals()
+for channel in sig:
+    s = sig[channel]
+    plt.figure(1,figsize=(16, 4))
+    plt.plot(sig.index,s)
+    plt.ylabel('Amplitude $uV$')
+    plt.xlabel('Time')
+    plt.title("Channel "+channel)
+    plt.show()
 ```
 
-
+## Spectrum
+### Power density
 ```python
-dir()
+for channel in psd_df:
+    s = psd_df[channel]
+    plt.figure(1,figsize=(16, 4))
+    plt.plot(psd_df.index,s)
+    plt.ylabel('Power $uV^2$')
+    plt.xlabel('Frequency')
+    plt.title("Channel "+channel)
+    plt.xlim(1, 20)
+    plt.show()
 ```
+### Peaks per band
+TODO
 
+## Absolute power
+### Matrix
 ```python
-locals()
+fig, ax = plt.subplots(1,1,figsize=(16,6))
+cax = ax.imshow(abs_df)
+c = setup["name"]
+b = bands["name"]
+ax.set_xticks(np.arange(len(c)))
+ax.set_yticks(np.arange(len(b)))
+ax.set_xticklabels(c)
+ax.set_yticklabels(b)
+fig.colorbar(cax)
+ax.set_title("Absolute Power")
+plt.show()
 ```
-The value of foo is <%=print(author)%>
-The value of foo is <%=print(globals["author"])%>
+### Headmap
 
-This an example of a script that can be published using
-[Pweave](http://mpastell.com/pweave). The script can be executed
-normally using Python or published to HTML with Pweave
-Text is written in markdown in lines starting with "`#'` " and code
-is executed and results are included in the published document.
-The concept is similar to
-publishing documents with [MATLAB](http://mathworks.com) or using
-stitch with [Knitr](http://http://yihui.name/knitr/demo/stitch/).
+## Relative power
+### Matrix
+### Headmap
 
-Notice that you don't need to define chunk options (see
-[Pweave docs](http://mpastell.com/pweave/usage.html#code-chunk-options)
-),
-but you do need one line of whitespace between text and code.
-If you want to define options you can do it on using a line starting with
-`#+`. just before code e.g. `#+ term=True, caption='Fancy plots.'`.
-If you're viewing the HTML version have a look at the
-[source](FIR_design.py) to see the markup.
-
-The code and text below comes mostly
-from my blog post [FIR design with SciPy](http://mpastell.com/2010/01/18/fir-with-scipy/),
-but I've updated it to reflect new features in SciPy.
-
-# FIR Filter Design
-
-We'll implement lowpass, highpass and ' bandpass FIR filters. If
-you want to read more about DSP I highly recommend [The Scientist
-and Engineer's Guide to Digital Signal
-Processing](http://www.dspguide.com/) which is freely available
-online.
-
-## Functions for frequency, phase, impulse and step response
-
-Let's first define functions to plot filter
-properties.
-
-
+## Corelation
+### Matrix
 ```python
-from pylab import *
-import scipy.signal as signal
-
-#Plot frequency and phase response
-def mfreqz(b,a=1):
-    w,h = signal.freqz(b,a)
-    h_dB = 20 * log10 (abs(h))
-    subplot(211)
-    plot(w/max(w),h_dB)
-    ylim(-150, 5)
-    ylabel('Magnitude (db)')
-    xlabel(r'Normalized Frequency (x$\pi$rad/sample)')
-    title(r'Frequency response')
-    subplot(212)
-    h_Phase = unwrap(arctan2(imag(h),real(h)))
-    plot(w/max(w),h_Phase)
-    ylabel('Phase (radians)')
-    xlabel(r'Normalized Frequency (x$\pi$rad/sample)')
-    title(r'Phase response')
-    _ = subplots_adjust(hspace=1)
-    show()
-
-#Plot step and impulse response
-def impz(b,a=1):
-    l = len(b)
-    impulse = repeat(0.,l); impulse[0] =1.
-    x = arange(0,l)
-    response = signal.lfilter(b,a,impulse)
-    subplot(211)
-    stem(x, response)
-    ylabel('Amplitude')
-    xlabel(r'n (samples)')
-    title(r'Impulse response')
-    subplot(212)
-    step = cumsum(response)
-    stem(x, step)
-    ylabel('Amplitude')
-    xlabel(r'n (samples)')
-    title(r'Step response')
-    _ = subplots_adjust(hspace=1)
-    show()
+fig, ax1 = plt.subplots(1,1,figsize=(16,6))
+cax = ax1.imshow(cor_df,vmin=-1, vmax=1)
+b = bands["name"]
+ax1.set_xticks(np.arange(len(b)))
+ax1.set_yticks(np.arange(len(b)))
+ax1.set_xticklabels(b)
+ax1.set_yticklabels(b)
+fig.colorbar(cax, ticks=[-1, -.5, 0, .5, 1])
+ax1.set_title("Correlation")
+plt.show()
 ```
+### Headmap
 
-## Lowpass FIR filter
+## Coherence
+### Headmaps
 
-Designing a lowpass FIR filter is very simple to do with SciPy, all you
-need to do is to define the window length, cut off frequency and the
-window.
-
-The Hamming window is defined as:
-$w(n) = \alpha - \beta\cos\frac{2\pi n}{N-1}$, where $\alpha=0.54$ and $\beta=0.46$
-
-The next code chunk is executed in term mode, see the [Python script](FIR_design.py) for syntax.
-Notice also that Pweave can now catch multiple figures/code chunk.
-
-
-```python, term=True
-n = 61
-a = signal.firwin(n, cutoff = 0.3, window = "hamming")
-#Frequency and phase response
-mfreqz(a)
-#Impulse and step response
-impz(a)
-```
-
-## Highpass FIR Filter
-
-Let's define a highpass FIR filter, if you compare to original blog
-post you'll notice that it has become easier since 2009. You don't
-need to do ' spectral inversion "manually" anymore!
-
-
-```python
-n = 101
-a = signal.firwin(n, cutoff = 0.3, window = "hanning", pass_zero=False)
-mfreqz(a)
-```
-
-## Bandpass FIR filter
-
-Notice that the plot has a caption defined in code chunk options.
-
-
-```python, caption="Bandpass FIR filter."
-n = 1001
-a = signal.firwin(n, cutoff = [0.2, 0.5], window = 'blackmanharris', pass_zero = False)
-mfreqz(a)
-```
+## Phase difference
+?? matrix?

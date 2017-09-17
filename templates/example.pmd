@@ -15,6 +15,7 @@
 `#' print(author)`
 
 ```python
+global author
 print(author)
 ```
 
