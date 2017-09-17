@@ -3,6 +3,7 @@ import argparse
 import report as rp
 import pweave
 import os
+from time import gmtime, strftime
 
 def create_parser(dir_path=os.path.dirname(os.path.realpath(__file__))):
     parser = argparse.ArgumentParser(prog="Reportes",
@@ -14,7 +15,7 @@ def create_parser(dir_path=os.path.dirname(os.path.realpath(__file__))):
                         help="File with the band setup")
     parser.add_argument("--template", "-t",
                         help="Markdown template to use",
-                        default=os.path.join(dir_path, "templates", "main.mdw"))
+                        default=os.path.join(dir_path, "templates", "main.pmd"))
     parser.add_argument("--html",
                         help="HTML template to use",
                         default=os.path.join(dir_path,
@@ -81,26 +82,27 @@ def main():
 
     for f in files:
         print("INFO: Processing file ", f)
-        sig    = rp.read_sig(f, n_channels)
-        # psd_df = rp.psd(sig, fs=fs) # Not used
-        psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
+        # sig    = rp.read_sig(f, n_channels)
+        # psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
         # abs_df = rp.pot_abs(psd_df, bands)
         # rel_df = rp.pot_rel(abs_df)
         # cor_df = sig.corr()
         # coh_df = rp.coh(sig, bands, fs=fs)
-        pdif_df = rp.phase_dif(phase_df, bands)
+        # pdif_df = rp.phase_dif(phase_df, bands)
 
-        # print(psd_df.head())
-        # print(phase_df.head())
-        # print(rel_df.head())
-        # print(abs_df.head())
-        # print(coh_df.head())
-        print(pdif_df.head())
-        
-        raise NotImplementedError
-        pweave.weave(template,
-                     doctype="md2html",
-                     )  # TODO
+
+        # Pweb.globals = { "foo" : "bar" } # This creates a global var `foo` with value 'bar'
+        # w = Pweb("inputfile.tex")        # Generate a Pweb class. We can't just call `pweave()`
+        # w.weave()                        # Equivalent of `pweave()`
+        pweave.Pweb.globals = {"date":strftime("%Y-%m-%d %H:%M:%S", gmtime()),
+                               "author":"Alberto Barradas"
+                               }
+        In = [0,0]
+        w = pweave.Pweb(template,
+                        doctype="md2html",
+                        output=args.output
+                        )
+        w.weave() 
 
 
 if __name__ == "__main__":

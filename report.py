@@ -17,7 +17,7 @@ def read_sig(path, n_channels, header=None, sep='\t', rem_len=5):
         sig = signals.iloc[:, 0:n_channels]
     except:
         raise IOError(str("Error: could not read file " + path))
-    #TODO
+    # TODO
     if not header:
         header = [i for i in sig.columns]
     if rem_len:
@@ -30,28 +30,28 @@ def read_chsetup(path=None, sep='\t'):
     if path:
         setup = []
         try:
-            return pd.read_csv(path,sep)
+            return pd.read_csv(path, sep)
         except:
             raise IOError()
     setup = np.array(np.mat('''0.3   1.0    "Fp1";
-                            0.7   1.0    "Fp2";
-                            0.5   0.725  "Fz" ;
-                            0.25  0.775  "F3" ;
-                            0.75  0.775  "F4" ;
-                            0.0   0.85   "F7" ;
-                            1.0   0.85   "F8" ;
-                            0.5   0.5    "Cz" ;
-                            0.25  0.5    "C3" ;
-                            0.75  0.5    "C4" ;
-                            0.0   0.5    "T3" ;
-                            1.0   0.5    "T4" ;
-                            0.5   0.275  "Pz" ;
-                            0.25  0.225  "P3" ;
-                            0.75  0.225  "P4" ;
-                            0.0   0.15   "T5" ;
-                            1.0   0.15   "T6" ;
-                            0.3   0.0    "O1" ;
-                            0.7   0.0    "O2"'''))
+                               0.7   1.0    "Fp2";
+                               0.5   0.725  "Fz" ;
+                               0.25  0.775  "F3" ;
+                               0.75  0.775  "F4" ;
+                               0.0   0.85   "F7" ;
+                               1.0   0.85   "F8" ;
+                               0.5   0.5    "Cz" ;
+                               0.25  0.5    "C3" ;
+                               0.75  0.5    "C4" ;
+                               0.0   0.5    "T3" ;
+                               1.0   0.5    "T4" ;
+                               0.5   0.275  "Pz" ;
+                               0.25  0.225  "P3" ;
+                               0.75  0.225  "P4" ;
+                               0.0   0.15   "T5" ;
+                               1.0   0.15   "T6" ;
+                               0.3   0.0    "O1" ;
+                               0.7   0.0    "O2"'''))
     return setup
 
 
@@ -59,7 +59,7 @@ def create_bands(band_names, band_lows, band_highs):
     df = pd.DataFrame({"name": band_names,
                        "low" : band_lows,
                        "high": band_highs})
-    return df[["name","low","high"]]
+    return df[["name", "low", "high"]]
 
 
 def psd(sig, fs=500, window='hanning', nperseg=1):
@@ -73,12 +73,12 @@ def psd(sig, fs=500, window='hanning', nperseg=1):
     """
     if nperseg > fs:
         raise AssertionError("Sampling frequency cannot be bigger than window size")
-    psds= sig.copy().apply(signal.welch,
-                           axis=0,
-                           args=(fs,
-                                 window,
-                                 nperseg * fs)
-                           )
+    psds = sig.copy().apply(signal.welch,
+                            axis=0,
+                            args=(fs,
+                                  window,
+                                  nperseg * fs)
+                            )
     psd_df = pd.DataFrame(columns=list(sig.columns.values),
                           index=psds[0][0])
     for column, i in zip(psd_df, psds):
@@ -160,7 +160,7 @@ def coh(sig, bands, fs=500):
     :param bands: dataframe with a column for name, lower inclusive frequency and higher non-inclusive frequency.
     :param fs: sampling frequency
     """
-    cols=[i + "-" + j for i in sig for j in sig]
+    cols = [i + "-" + j for i in sig for j in sig]
     coh_df = pd.DataFrame(columns=cols)
     coh_temp = pd.DataFrame()
     for col1 in sig:
@@ -175,7 +175,7 @@ def coh(sig, bands, fs=500):
                 band_coh = float(coh_temp[row["low"]:row["high"]].mean())  # TODO: check if average is correct
                 v.append(band_coh)
 
-            coh_df[col1+"-"+col2] = v
+            coh_df[col1 + "-" + col2] = v
 
     coh_df.index = bands["name"]
     return coh_df
@@ -194,6 +194,6 @@ def phase_dif(phase_df, bands):
             v = []
             for index, row in bands.iterrows():
                 v.append(float(ph_temp[row["low"]:row["high"]].mean()))
-            pdif_df[col1+"-"+col2] = v
+            pdif_df[col1 + "-" + col2] = v
     pdif_df.index = bands["name"]
     return pdif_df
