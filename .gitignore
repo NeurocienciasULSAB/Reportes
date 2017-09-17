@@ -231,3 +231,5 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+cache
