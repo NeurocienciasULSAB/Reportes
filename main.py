@@ -90,7 +90,7 @@ def main():
     setup.to_csv(os.path.join(cache_dir, "setup"),index=False)
     pd.DataFrame({"freq":[fs],
                   "output":[args.output]}).to_csv(os.path.join(cache_dir, "other"),index=False)
-    n_channels = setup.size # TODO: not true.
+    n_channels = len(setup.index) # TODO: not true.
 
 
     for f in files:

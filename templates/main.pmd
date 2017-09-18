@@ -3,13 +3,16 @@
 # Setup
 
 ```python, echo=False
-# Read variables:
 import pandas as pd
 import os
 import report as rp
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib
+import scipy.interpolate
+
 
 global _dh
 dir_path = _dh[0]
@@ -22,17 +25,16 @@ file_name = name["name"][0]
 output    = other["output"][0]
 fs        = other["freq"][0]
 
-print(setup.size)
-print(setup)
-
-n_channels = setup.size - 1
+n_channels = len(setup)
+pos = {}
+for i,row in setup.iterrows():
+    pos[row["name"]] = (row['x'],row['y'])
 ```
 
 Analysis for file <% print(file_name) %>
 # Analysis
 
 ```python
-
 sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
 psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
 abs_df = rp.pot_abs(psd_df, bands)
@@ -40,16 +42,6 @@ rel_df = rp.pot_rel(abs_df)
 cor_df = sig.corr()
 coh_df = rp.coh(sig, bands, fs=fs)
 pdif_df = rp.phase_dif(phase_df, bands)
-
-
-print(sig.head())
-print(psd_df.head())
-print(phase_df.head())
-print(abs_df.head())
-print(rel_df.head())
-print(cor_df.head())
-print(coh_df.head())
-print(pdif_df.head())
 ```
 
 # Visualization
@@ -57,12 +49,11 @@ print(pdif_df.head())
 ## Signal
 ```python
 for channel in sig:
-    s = sig[channel]
     plt.figure(1,figsize=(16, 4))
-    plt.plot(sig.index,s)
+    plt.plot(np.arange(len(sig)),sig[channel])
     plt.ylabel('Amplitude $uV$')
     plt.xlabel('Time')
-    plt.title("Channel "+channel)
+    plt.title("Channel " + channel)
     plt.show()
 ```
 
@@ -79,48 +70,97 @@ for channel in psd_df:
     plt.xlim(1, 20)
     plt.show()
 ```
-### Peaks per band
-TODO
 
 ## Absolute power
 ### Matrix
 ```python
 fig, ax = plt.subplots(1,1,figsize=(16,6))
-cax = ax.imshow(abs_df)
+im = ax.imshow(abs_df)
 c = setup["name"]
 b = bands["name"]
 ax.set_xticks(np.arange(len(c)))
 ax.set_yticks(np.arange(len(b)))
 ax.set_xticklabels(c)
 ax.set_yticklabels(b)
-fig.colorbar(cax)
 ax.set_title("Absolute Power")
+
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="2%", pad=0.5)
+fig.colorbar(im, cax=cax)
+
 plt.show()
 ```
 ### Headmap
+```python
+plots = rp.headmap(abs_df, setup)
+for p in plots:
+    plt.show(p[0]) # display
+```
 
 ## Relative power
 ### Matrix
+```python
+fig, ax = plt.subplots(1,1,figsize=(16,6))
+im = ax.imshow(rel_df)
+c = setup["name"]
+b = bands["name"]
+ax.set_xticks(np.arange(len(c)))
+ax.set_yticks(np.arange(len(b)))
+ax.set_xticklabels(c)
+ax.set_yticklabels(b)
+ax.set_title("Relative Power")
+
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="2%", pad=0.5)
+fig.colorbar(im, cax=cax)
+
+plt.show()
+```
 ### Headmap
+```python
+plots = rp.headmap(rel_df, setup)
+for p in plots:
+    plt.show(p[0]) # display
+```
 
 ## Corelation
 ### Matrix
 ```python
-fig, ax1 = plt.subplots(1,1,figsize=(16,6))
-cax = ax1.imshow(cor_df,vmin=-1, vmax=1)
-b = bands["name"]
-ax1.set_xticks(np.arange(len(b)))
-ax1.set_yticks(np.arange(len(b)))
-ax1.set_xticklabels(b)
-ax1.set_yticklabels(b)
-fig.colorbar(cax, ticks=[-1, -.5, 0, .5, 1])
-ax1.set_title("Correlation")
+fig, ax = plt.subplots(1,1,figsize=(10,10))
+im = ax.imshow(cor_df,vmin=-1, vmax=1, cmap=plt.cm.RdBu)
+ax.set_xticks(np.arange(len(c)))
+ax.set_yticks(np.arange(len(c)))
+ax.set_xticklabels(c)
+ax.set_yticklabels(c)
+ax.set_title("Correlation")
+
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.5)
+fig.colorbar(im, cax=cax, ticks=[-1, -.5, 0, .5, 1])
+
 plt.show()
 ```
-### Headmap
+### Headnet
+```python
+tresholds = [-0.8, 0.8]
+fig, ax = rp.cor_headnet(cor_df, pos, tresholds)
+plt.show() # display
+```
 
 ## Coherence
-### Headmaps
+### Headnets
+```python
+treshold = 0.8
+plots = rp.coh_headnet(coh_df, pos, treshold)
+for p in plots:
+    plt.show(p[0]) # display
+```
 
 ## Phase difference
-?? matrix?
+### Headnet
+```python
+treshold = 0.8
+plots = rp.phs_headnet(pdif_df, pos)
+for p in plots:
+    plt.show(p[0]) # display
+```
