@@ -99,6 +99,7 @@ def main():
         pd.DataFrame({"name":[f]}).to_csv(os.path.join(cache_dir, "name"),index=False)
         # sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
         # psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
+        # peaks_df = rp.band_peaks(psd_df, bands)
         # abs_df = rp.pot_abs(psd_df, bands)
         # rel_df = rp.pot_rel(abs_df)
         # cor_df = sig.corr()

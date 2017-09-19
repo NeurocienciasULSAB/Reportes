@@ -129,12 +129,37 @@ def simple_fft(sig, fs=500, f=False):
         return ps[idx]
 
 
+def band_peaks(psd_df, bands):
+    """
+    Return a dataframe with the peak frequency for every band in every channel
+
+    :param psd_df: DataFrame with power spectrum density as rows and channels as columns
+    :param bands: DataFrame with the desired bands and their cut frequencies
+    """
+    A = np.array([i for i in psd_df.columns.values for _ in (0,1)])
+    B = np.array(['Freq', 'Pot']*len(psd_df.columns.values))
+    W = [i for i in zip(A,B)]
+
+    max_df = pd.DataFrame(columns=pd.MultiIndex.from_tuples(W))
+    for channel in psd_df:
+        pots  = []
+        freqs = []
+        for index, row in bands.iterrows():
+            freq = float(psd_df[row["low"]:row["high"]][channel].idxmax())
+            pot  = float(psd_df[row["low"]:row["high"]][channel].max())
+            pots.append(pot)
+            freqs.append(freq)
+        max_df[channel, "Freq"] = freqs
+        max_df[channel, "Pot"]  = pots
+        max_df.index = bands["name"]
+    return max_df
+
 def pot_abs(psd_df, bands):
     """
     Return a dataframe with the abolute power of the given bands for every channel in the dataframe
 
-    :param df: data frame with power spectrum as rows and channels as columns
-    :param bands: Dataframe with the desired bands and their cut frequencies
+    :param psd_df: DataFrame with power spectrum density as rows and channels as columns
+    :param bands: DataFrame with the desired bands and their cut frequencies
     """
     abs_df  = pd.DataFrame(columns=list(psd_df.columns.values),
                            index=bands["name"])
