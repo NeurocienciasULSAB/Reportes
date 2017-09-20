@@ -2,7 +2,7 @@
 
 # Setup
 
-```python, echo=False
+```python, echo=False, name="Setup"
 import pandas as pd
 import os
 import report as rp
@@ -34,7 +34,7 @@ for i,row in setup.iterrows():
 Analysis for file <% print(file_name) %>
 # Analysis
 
-```python
+```python, name="Analysis"
 sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
 psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
 abs_df = rp.pot_abs(psd_df, bands)
@@ -47,7 +47,7 @@ pdif_df = rp.phase_dif(phase_df, bands)
 # Visualization
 
 ## Signal
-```python
+```python, name="Signal viz"
 for channel in sig:
     plt.figure(1,figsize=(16, 4))
     plt.plot(np.arange(len(sig)),sig[channel])
@@ -59,11 +59,15 @@ for channel in sig:
 
 ## Spectrum
 ### Power density
-```python
+```python, name="Spuctrum"
 for channel in psd_df:
     s = psd_df[channel]
+    peaks = max_df[channel]
+    freqs = peaks["Freq"].tolist()
+    pots  = peaks["Pot"].tolist()
     plt.figure(1,figsize=(16, 4))
     plt.plot(psd_df.index,s)
+    plt.scatter(freqs, pots, c='r')
     plt.ylabel('Power $uV^2$')
     plt.xlabel('Frequency')
     plt.title("Channel "+channel)
@@ -73,7 +77,7 @@ for channel in psd_df:
 
 ## Absolute power
 ### Matrix
-```python
+```python, name="Absolute Power Matrix"
 fig, ax = plt.subplots(1,1,figsize=(16,6))
 im = ax.imshow(abs_df)
 c = setup["name"]
@@ -91,7 +95,7 @@ fig.colorbar(im, cax=cax)
 plt.show()
 ```
 ### Headmap
-```python
+```python, name="Absolute Power Headplot"
 plots = rp.headmap(abs_df, setup)
 for p in plots:
     plt.show(p[0]) # display
@@ -99,7 +103,7 @@ for p in plots:
 
 ## Relative power
 ### Matrix
-```python
+```python, name="Relative Power Matrix"
 fig, ax = plt.subplots(1,1,figsize=(16,6))
 im = ax.imshow(rel_df)
 c = setup["name"]
@@ -117,7 +121,7 @@ fig.colorbar(im, cax=cax)
 plt.show()
 ```
 ### Headmap
-```python
+```python, name="Relative Power Headmap"
 plots = rp.headmap(rel_df, setup)
 for p in plots:
     plt.show(p[0]) # display
@@ -125,7 +129,7 @@ for p in plots:
 
 ## Corelation
 ### Matrix
-```python
+```python, name="Correlation Matrix"
 fig, ax = plt.subplots(1,1,figsize=(10,10))
 im = ax.imshow(cor_df,vmin=-1, vmax=1, cmap=plt.cm.RdBu)
 ax.set_xticks(np.arange(len(c)))
@@ -141,7 +145,7 @@ fig.colorbar(im, cax=cax, ticks=[-1, -.5, 0, .5, 1])
 plt.show()
 ```
 ### Headnet
-```python
+```python, name="Correlation Headnet"
 tresholds = [-0.8, 0.8]
 fig, ax = rp.cor_headnet(cor_df, pos, tresholds)
 plt.show() # display
@@ -149,7 +153,7 @@ plt.show() # display
 
 ## Coherence
 ### Headnets
-```python
+```python, name="Coherence Headnets"
 treshold = 0.8
 plots = rp.coh_headnet(coh_df, pos, treshold)
 for p in plots:
@@ -158,7 +162,7 @@ for p in plots:
 
 ## Phase difference
 ### Headnet
-```python
+```python, name="Phase difference Headnets"
 treshold = 0.8
 plots = rp.phs_headnet(pdif_df, pos)
 for p in plots:
