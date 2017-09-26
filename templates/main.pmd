@@ -32,37 +32,24 @@ for i,row in setup.iterrows():
 ```
 
 Analysis for file <% print(file_name) %>
-# Analysis
 
-```python, name="Analysis"
-sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
-psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
-abs_df = rp.pot_abs(psd_df, bands)
-rel_df = rp.pot_rel(abs_df)
-cor_df = sig.corr()
-coh_df = rp.coh(sig, bands, fs=fs)
-pdif_df = rp.phase_dif(phase_df, bands)
+```python, name="Analysis", echo=False
+psd_df   = pd.read_csv(os.path.join(dir_path, "cache", "psd_df"), index_col=0)
+peaks_df = pd.read_csv(os.path.join(dir_path, "cache", "peaks_df"), index_col=0, header=[0, 1])
+abs_df   = pd.read_csv(os.path.join(dir_path, "cache", "abs_df"), index_col=0)
+rel_df   = pd.read_csv(os.path.join(dir_path, "cache", "rel_df"), index_col=0)
+cor_df   = pd.read_csv(os.path.join(dir_path, "cache", "cor_df"), index_col=0)
+coh_df   = pd.read_csv(os.path.join(dir_path, "cache", "coh_df"), index_col=0)
+pdif_df  = pd.read_csv(os.path.join(dir_path, "cache", "pdif_df"), index_col=0)
 ```
 
 # Visualization
-
-## Signal
-```python, name="Signal viz"
-for channel in sig:
-    plt.figure(1,figsize=(16, 4))
-    plt.plot(np.arange(len(sig)),sig[channel])
-    plt.ylabel('Amplitude $uV$')
-    plt.xlabel('Time')
-    plt.title("Channel " + channel)
-    plt.show()
-```
-
 ## Spectrum
 ### Power density
 ```python, name="Spuctrum"
 for channel in psd_df:
     s = psd_df[channel]
-    peaks = max_df[channel]
+    peaks = peaks_df[channel]
     freqs = peaks["Freq"].tolist()
     pots  = peaks["Pot"].tolist()
     plt.figure(1,figsize=(16, 4))
