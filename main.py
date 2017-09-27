@@ -7,14 +7,6 @@ import os
 import shutil
 
 
-class Handler:
-    def onDeleteWindow(self, *args):
-        Gtk.main_quit(*args)
-
-    def onButtonPressed(self, button):
-        print("Hello World!")
-
-
 def create_parser(dir_path=os.path.dirname(os.path.realpath(__file__))):
     parser = argparse.ArgumentParser(prog="Reportes",
                                      description="Report creation utility for EEG signals.",
@@ -50,16 +42,16 @@ def main():
     dir_path  = os.path.dirname(os.path.realpath(__file__))
     parser    = create_parser(dir_path)
     args      = parser.parse_args()
-    fs        = args.fs  
+    fs        = args.fs
     cache_dir = os.path.join(dir_path, "cache")
     MULTIPLE  = False
 
     if args.setup:
         setup = rp.read_chsetup(args.setup)
     else:
-        setup = rp.read_chsetup() # TODO variable to dump
+        setup = rp.read_chsetup()  # TODO variable to dump
     setup = pd.DataFrame(setup)
-    setup.columns = ["x","y","name"]
+    setup.columns = ["x", "y", "name"]
 
     if args.bands:
         # TODO: implement
@@ -90,18 +82,27 @@ def main():
         shutil.rmtree(cache_dir)
 
     os.makedirs(cache_dir)
-    bands.to_csv(os.path.join(cache_dir, "bands"),index=False)
-    setup.to_csv(os.path.join(cache_dir, "setup"),index=False)
-    pd.DataFrame({"freq":[fs],
-                  "output":[args.output]}).to_csv(os.path.join(cache_dir, "other"),index=False)
-    n_channels = len(setup.index) # TODO: not true.
+    bands.to_csv(os.path.join(cache_dir, "bands"), index=False)
+    setup.to_csv(os.path.join(cache_dir, "setup"), index=False)
+    pd.DataFrame({"freq": [fs],
+                  "output": [args.output]}).to_csv(os.path.join(cache_dir, "other"), index=False)
+    n_channels = len(setup.index)  # TODO: not necesarily true.
+
+    psd_df = pd.DataFrame()
+    peaks_df = pd.DataFrame()
+    abs_df = pd.DataFrame()
+    rel_df = pd.DataFrame()
+    cor_df = pd.DataFrame()
+    coh_df = pd.DataFrame()
+    pdif_df = pd.DataFrame()
 
     n = 0
     for f in files:
         print("INFO: Processing file ", f)
-        shutil.copyfile(f, os.path.join(cache_dir,"temp"))
-        pd.DataFrame({"name":[f]}).to_csv(os.path.join(cache_dir, "name"),index=False)
-        sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
+        # shutil.copyfile(f, os.path.join(cache_dir, "temp"))
+        pd.DataFrame({"name": [f]}).to_csv(os.path.join(cache_dir, "name"), index=False)
+        # sig    = rp.read_sig(os.path.join(dir_path, "cache", "temp"), n_channels)
+        sig    = rp.read_sig(f, n_channels)
         psd_df, phase_df = rp.sig_to_frequency(sig, fs=fs)
         peaks_df = rp.band_peaks(psd_df, bands)
         abs_df = rp.pot_abs(psd_df, bands)
@@ -110,8 +111,8 @@ def main():
         coh_df = rp.coh(sig, bands, fs=fs)
         pdif_df = rp.phase_dif(phase_df, bands)
 
-        if MULTIPLE: 
-            if n==0:
+        if MULTIPLE:
+            if n == 0:
                 avg_psd   = np.array([psd_df.as_matrix()], np.float64)
                 avg_peaks = np.array([peaks_df.as_matrix()], np.float64)
                 avg_abs   = np.array([abs_df.as_matrix()], np.float64)
@@ -119,7 +120,7 @@ def main():
                 avg_cor   = np.array([cor_df.as_matrix()], np.float64)
                 avg_coh   = np.array([coh_df.as_matrix()], np.float64)
                 avg_pdif  = np.array([pdif_df.as_matrix()], np.float64)
-                n+=1
+                n += 1
             avg_psd   = np.concatenate((avg_psd, [psd_df.as_matrix()]), axis=0)
             avg_peaks = np.concatenate((avg_peaks, [peaks_df.as_matrix()]), axis=0)
             avg_abs   = np.concatenate((avg_abs, [abs_df.as_matrix()]), axis=0)
@@ -128,7 +129,7 @@ def main():
             avg_coh   = np.concatenate((avg_coh, [coh_df.as_matrix()]), axis=0)
             avg_pdif  = np.concatenate((avg_pdif, [pdif_df.as_matrix()]), axis=0)
             n += 1
-        
+
         psd_df.to_csv(os.path.join(cache_dir, "psd_df"))
         peaks_df.to_csv(os.path.join(cache_dir, "peaks_df"))
         abs_df.to_csv(os.path.join(cache_dir, "abs_df"))
@@ -139,28 +140,35 @@ def main():
 
         w = pweave.Pweb(template,
                         doctype="md2html",
-                        output="./Reports/"+os.path.basename(f).split('.')[0]+".html") # TODO: output folder and path.join
+                        output="./Reports/" + os.path.basename(f).split('.')[0] + ".html")  # TODO: output folder and path.join
         w.weave()
-    
+
     if MULTIPLE:
-        print(avg_psd)
-        print(avg_psd.shape)
-        # avg_psd.to_csv(os.path.join(cache_dir, "psd_df"))
-        # avg_peaks.to_csv(os.path.join(cache_dir, "peaks_df"))
-        # avg_abs.to_csv(os.path.join(cache_dir, "abs_df"))
-        # avg_rel.to_csv(os.path.join(cache_dir, "rel_df"))
-        # avg_cor.to_csv(os.path.join(cache_dir, "cor_df"))
-        # avg_coh.to_csv(os.path.join(cache_dir, "coh_df"))
-        # avg_pdif.to_csv(os.path.join(cache_dir, "pdif_df"))
-        
+        print("INFO: Processing Group Average ")
+        avg_psd   = pd.DataFrame(np.mean(avg_psd, axis=0), columns=psd_df.columns, index=psd_df.index)
+        avg_peaks = pd.DataFrame(np.mean(avg_peaks, axis=0), columns=peaks_df.columns, index=peaks_df.index)
+        avg_abs   = pd.DataFrame(np.mean(avg_abs, axis=0), columns=abs_df.columns, index=abs_df.index)
+        avg_rel   = pd.DataFrame(np.mean(avg_rel, axis=0), columns=rel_df.columns, index=rel_df.index)
+        avg_cor   = pd.DataFrame(np.mean(avg_cor, axis=0), columns=cor_df.columns, index=cor_df.index)
+        avg_coh   = pd.DataFrame(np.mean(avg_coh, axis=0), columns=coh_df.columns, index=coh_df.index)
+        avg_pdif  = pd.DataFrame(np.mean(avg_pdif, axis=0), columns=pdif_df.columns, index=pdif_df.index)
+
+        pd.DataFrame({"name": ["Grop_Average"]}).to_csv(os.path.join(cache_dir, "name"), index=False)
+        avg_psd.to_csv(os.path.join(cache_dir, "psd_df"))
+        avg_peaks.to_csv(os.path.join(cache_dir, "peaks_df"))
+        avg_abs.to_csv(os.path.join(cache_dir, "abs_df"))
+        avg_rel.to_csv(os.path.join(cache_dir, "rel_df"))
+        avg_cor.to_csv(os.path.join(cache_dir, "cor_df"))
+        avg_coh.to_csv(os.path.join(cache_dir, "coh_df"))
+        avg_pdif.to_csv(os.path.join(cache_dir, "pdif_df"))
+
         w = pweave.Pweb(template,
                         doctype="md2html",
-                        output="./Reports/"+os.path.basename(f).split('.')[0]+".html") # TODO: output folder and path.join
-        # w.weave()
+                        output="./Reports/" + "Group_Average" + ".html")  # TODO: output folder and path.join and mean name
+        w.weave()
     # shutil.rmtree(cache_dir)
 
 
 if __name__ == "__main__":
     # execute only if run as a script
     main()
-
