@@ -38,25 +38,26 @@ def read_chsetup(path=None, sep='\t'):
             return pd.read_csv(path, sep)
         except:
             raise IOError()
-    setup = np.array(np.mat('''0.3   1.0    "Fp1";
-                               0.7   1.0    "Fp2";
-                               0.5   0.725  "Fz" ;
-                               0.25  0.775  "F3" ;
-                               0.75  0.775  "F4" ;
-                               0.0   0.85   "F7" ;
-                               1.0   0.85   "F8" ;
-                               0.5   0.5    "Cz" ;
-                               0.25  0.5    "C3" ;
-                               0.75  0.5    "C4" ;
-                               0.0   0.5    "T3" ;
-                               1.0   0.5    "T4" ;
-                               0.5   0.275  "Pz" ;
-                               0.25  0.225  "P3" ;
-                               0.75  0.225  "P4" ;
-                               0.0   0.15   "T5" ;
-                               1.0   0.15   "T6" ;
-                               0.3   0.0    "O1" ;
-                               0.7   0.0    "O2"'''))
+    setup = np.array([[0.3,   1.0,    "Fp1"],
+                      [0.7,   1.0,    "Fp2"],
+                      [0.5,   0.725,  "Fz"],
+                      [0.25,  0.775,  "F3"],
+                      [0.75,  0.775,  "F4"],
+                      [0.0,   0.85,   "F7"],
+                      [1.0,   0.85,   "F8"],
+                      [0.5,   0.5,    "Cz"],
+                      [0.25,  0.5,    "C3"],
+                      [0.75,  0.5,    "C4"],
+                      [0.0,   0.5,    "T3"],
+                      [1.0,   0.5,    "T4"],
+                      [0.5,   0.275,  "Pz"],
+                      [0.25,  0.225,  "P3"],
+                      [0.75,  0.225,  "P4"],
+                      [0.0,   0.15,   "T5"],
+                      [1.0,   0.15,   "T6"],
+                      [0.3,   0.0,    "O1"],
+                      [0.7,   0.0,    "O2"]]
+                    )
     return setup
 
 
@@ -102,7 +103,7 @@ def sig_to_frequency(sig, fs=500):
                                args=(fs,
                                      False)
                                )
-    freq_df.index = simple_fft(freq_df[[0]], fs=fs, f=True)
+    freq_df.index = simple_fft(freq_df["Cz"], fs=fs, f=True)  # TODO: incompatibility with windows: KeyError: '[0] not in index'
     phase_df = freq_df.copy().apply(np.angle, axis=0)
     psd_df = freq_df.apply(lambda x: (np.abs(x) / len(sig.index))**2,
                            axis=0)
