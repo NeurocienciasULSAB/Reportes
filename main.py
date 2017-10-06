@@ -69,6 +69,9 @@ def main():
         bands = rp.create_bands(band_names, band_lows, band_highs)  # TODO variable to dump
     template = args.template
     files = []
+
+    output_folder = args.output
+    csv_folder = os.path.join(output_folder, "csv")
     if os.path.isdir(args.input):
         files = [os.path.join(args.input, i) for i in os.listdir(args.input)]
         if len(files) > 1:
@@ -80,6 +83,18 @@ def main():
 
     if os.path.exists(cache_dir):
         shutil.rmtree(cache_dir)
+
+    if not (os.path.exists(output_folder)):
+        os.makedirs(output_folder)
+    if not (os.path.isdir(output_folder)):
+        shutil.rmtree(output_folder)
+        os.makedirs(output_folder)
+
+    if not (os.path.exists(csv_folder)):
+        os.makedirs(csv_folder)
+    if not (os.path.isdir(csv_folder)):
+        shutil.rmtree(csv_folder)
+        os.makedirs(csv_folder)
 
     os.makedirs(cache_dir)
     bands.to_csv(os.path.join(cache_dir, "bands"), index=False)
@@ -138,9 +153,17 @@ def main():
         coh_df.to_csv(os.path.join(cache_dir, "coh_df"))
         pdif_df.to_csv(os.path.join(cache_dir, "pdif_df"))
 
+        psd_df.to_csv(os.path.join(csv_folder, str(n) + "psd_df.csv"))
+        peaks_df.to_csv(os.path.join(csv_folder, str(n) + "peaks_df.csv"))
+        abs_df.to_csv(os.path.join(csv_folder, str(n) + "abs_df.csv"))
+        rel_df.to_csv(os.path.join(csv_folder, str(n) + "rel_df.csv"))
+        cor_df.to_csv(os.path.join(csv_folder, str(n) + "cor_df.csv"))
+        coh_df.to_csv(os.path.join(csv_folder, str(n) + "coh_df.csv"))
+        pdif_df.to_csv(os.path.join(csv_folder, str(n) + "pdif_df.csv"))
+
         w = pweave.Pweb(template,
                         doctype="md2html",
-                        output="./Reports/" + os.path.basename(f).split('.')[0] + ".html")  # TODO: output folder and path.join
+                        output=os.path.join(output_folder, "Group_Average" + ".html"))
         w.weave()
 
     if MULTIPLE:
@@ -153,7 +176,7 @@ def main():
         avg_coh   = pd.DataFrame(np.mean(avg_coh, axis=0), columns=coh_df.columns, index=coh_df.index)
         avg_pdif  = pd.DataFrame(np.mean(avg_pdif, axis=0), columns=pdif_df.columns, index=pdif_df.index)
 
-        pd.DataFrame({"name": ["Grop_Average"]}).to_csv(os.path.join(cache_dir, "name"), index=False)
+        pd.DataFrame({"name": ["Group_Average"]}).to_csv(os.path.join(cache_dir, "name"), index=False)
         avg_psd.to_csv(os.path.join(cache_dir, "psd_df"))
         avg_peaks.to_csv(os.path.join(cache_dir, "peaks_df"))
         avg_abs.to_csv(os.path.join(cache_dir, "abs_df"))
@@ -162,9 +185,17 @@ def main():
         avg_coh.to_csv(os.path.join(cache_dir, "coh_df"))
         avg_pdif.to_csv(os.path.join(cache_dir, "pdif_df"))
 
+        avg_psd.to_csv(os.path.join(csv_folder, "Gropup_avg" + "psd_df.csv"))
+        avg_peaks.to_csv(os.path.join(csv_folder, "Gropup_avg" + "peaks_df.csv"))
+        avg_abs.to_csv(os.path.join(csv_folder, "Gropup_avg" + "abs_df.csv"))
+        avg_rel.to_csv(os.path.join(csv_folder, "Gropup_avg" + "rel_df.csv"))
+        avg_cor.to_csv(os.path.join(csv_folder, "Gropup_avg" + "cor_df.csv"))
+        avg_coh.to_csv(os.path.join(csv_folder, "Gropup_avg" + "coh_df.csv"))
+        avg_pdif.to_csv(os.path.join(csv_folder, "Gropup_avg" + "pdif_df.csv"))
+
         w = pweave.Pweb(template,
                         doctype="md2html",
-                        output="./Reports/" + "Group_Average" + ".html")  # TODO: output folder and path.join and mean name
+                        output=os.path.join(output_folder, "Group_Average" + ".html"))
         w.weave()
     # shutil.rmtree(cache_dir)
 
